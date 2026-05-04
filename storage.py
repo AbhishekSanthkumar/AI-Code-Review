@@ -1,6 +1,6 @@
 import sqlite3, os
 
-DB_PATH = os.getenv("DB_PATH", "./reviews.db")
+DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "reviews.db")
 
 def init_db():
     con = sqlite3.connect(DB_PATH)
