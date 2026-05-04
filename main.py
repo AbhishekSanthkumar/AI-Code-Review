@@ -6,6 +6,8 @@ from github_client import fetch_pr_files
 from reviewer import review_pr
 from comment_poster import post_review, post_error_comment
 from storage import init_db, already_reviewed, mark_reviewed, DB_PATH
+from contextlib import asynccontextmanager
+
 
 # call this once at startup
 init_db()
@@ -17,10 +19,13 @@ WEBHOOK_SECRET = os.getenv("GITHUB_WEBHOOK_SECRET")
 
 from storage import init_db, already_reviewed, mark_reviewed
 
-@app.on_event("startup")
-async def startup():
+@asynccontextmanager
+async def lifespan(app):
     init_db()
     print("[server] Database initialized")
+    yield
+
+app = FastAPI(lifespan=lifespan)
 
 # ── Data model ────────────────────────────────────────────
 
