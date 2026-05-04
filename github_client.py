@@ -29,6 +29,20 @@ class FileChange:
     additions: int
     deletions: int
 
+def _load_private_key() -> str:
+    # production — key stored as environment variable
+    key_from_env = os.getenv("GITHUB_PRIVATE_KEY")
+    if key_from_env:
+        return key_from_env.replace("\\n", "\n")
+    
+    # local development — key loaded from .pem file
+    key_path = os.getenv("GITHUB_PRIVATE_KEY_PATH")
+    if key_path:
+        with open(key_path, "r") as f:
+            return f.read()
+    
+    raise ValueError("No private key found. Set GITHUB_PRIVATE_KEY or GITHUB_PRIVATE_KEY_PATH.")
+
 # ── Auth ──────────────────────────────────────────────────
 
 def _generate_jwt() -> str:
