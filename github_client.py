@@ -1,11 +1,11 @@
-import httpx, jwt, time, base64, os
+import httpx, jwt, time, os
 from dataclasses import dataclass
 from dotenv import load_dotenv
 
 load_dotenv()
 
 APP_ID           = os.getenv("GITHUB_APP_ID")
-PRIVATE_KEY_PATH = os.getenv("GITHUB_PRIVATE_KEY")
+PRIVATE_KEY_PATH = os.getenv("GITHUB_PRIVATE_KEY_PATH")
 API_BASE         = "https://api.github.com"
 API_HEADERS      = {
     "Accept": "application/vnd.github+json",
@@ -29,25 +29,27 @@ class FileChange:
     additions: int
     deletions: int
 
+# ── Auth ──────────────────────────────────────────────────
+
 def _load_private_key() -> str:
     # production — key stored as environment variable
     key_from_env = os.getenv("GITHUB_PRIVATE_KEY")
     if key_from_env:
-        return key_from_env.replace("\\n", "\n")
-    
+        key = key_from_env.replace("\\n", "\n")
+        print(f"[auth] Key loaded from env — {len(key)} chars")
+        return key
+
     # local development — key loaded from .pem file
-    key_path = os.getenv("GITHUB_PRIVATE_KEY_PATH")
-    if key_path:
-        with open(key_path, "r") as f:
-            return f.read()
-    
+    if PRIVATE_KEY_PATH:
+        with open(PRIVATE_KEY_PATH, "r") as f:
+            key = f.read()
+        print(f"[auth] Key loaded from file — {len(key)} chars")
+        return key
+
     raise ValueError("No private key found. Set GITHUB_PRIVATE_KEY or GITHUB_PRIVATE_KEY_PATH.")
 
-# ── Auth ──────────────────────────────────────────────────
-
 def _generate_jwt() -> str:
-    with open(PRIVATE_KEY_PATH, "r") as f:
-        private_key = f.read()
+    private_key = _load_private_key()
     now = int(time.time())
     payload = {
         "iat": now - 60,
