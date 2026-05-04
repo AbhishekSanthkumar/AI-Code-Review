@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 APP_ID           = os.getenv("GITHUB_APP_ID")
-PRIVATE_KEY_PATH = os.getenv("GITHUB_PRIVATE_KEY_PATH")
+PRIVATE_KEY_PATH = os.getenv("GITHUB_PRIVATE_KEY")
 API_BASE         = "https://api.github.com"
 API_HEADERS      = {
     "Accept": "application/vnd.github+json",
