@@ -4,8 +4,8 @@ from dotenv import load_dotenv
 import hmac, hashlib, os, json
 from github_client import fetch_pr_files
 from reviewer import review_pr
-from storage import init_db, already_reviewed, mark_reviewed
 from comment_poster import post_review, post_error_comment
+from storage import init_db, already_reviewed, mark_reviewed, DB_PATH
 
 # call this once at startup
 init_db()
@@ -81,11 +81,14 @@ def parse_pr_payload(payload: dict) -> PREvent | None:
 
 async def run_review(event: PREvent):
     print(f"[review] PR #{event.pr_number} in {event.repo_name}")
+    print(f"[idempotency] SHA: {event.head_sha[:12]} | DB: {DB_PATH}")
 
-    # idempotency check — skip if already reviewed this exact commit
+    # idempotency check — skip if already reviewed this exact commit    
     if already_reviewed(event.repo_name, event.pr_number, event.head_sha):
-        print(f"[review] Already reviewed {event.head_sha[:8]} — skipping")
+        print(f"[idempotency] Already reviewed — SKIPPING ✓")
         return
+    
+    print(f"[idempotency] New SHA — proceeding")
 
     try:
         # 1. fetch diff
