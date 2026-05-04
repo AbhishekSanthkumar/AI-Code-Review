@@ -1,0 +1,1 @@
+.env *.pem __pycache__/ venv/ .env.local
