@@ -2,6 +2,10 @@ from fastapi import FastAPI, Request, HTTPException, BackgroundTasks
 from dataclasses import dataclass
 from dotenv import load_dotenv
 import hmac, hashlib, os, json
+from github_client import fetch_pr_files
+from reviewer import review_pr
+from comment_poster import post_review
+
 
 load_dotenv()
 
@@ -66,9 +70,36 @@ def parse_pr_payload(payload: dict) -> PREvent | None:
 # ── Review pipeline (stub for now) ───────────────────────
 
 async def run_review(event: PREvent):
-    print(f"[review] Starting review for PR #{event.pr_number} in {event.repo_name}")
-    print(f"[review] Author: {event.author} | Files changed: {event.changed_files}")
-    print(f"[review] Head SHA: {event.head_sha}")
+    print(f"[review] PR #{event.pr_number} in {event.repo_name}")
+
+    # 1. fetch diff
+    files = await fetch_pr_files(
+        event.repo_name,
+        event.pr_number,
+        event.installation_id,
+    )
+    print(f"[review] Fetched {len(files)} files")
+
+    if not files:
+        print("[review] No reviewable files — skipping")
+        return
+
+    # 2. ask Claude
+    summary, comments = await review_pr(
+        event.pr_title,
+        event.pr_body,
+        files,
+    )
+
+    # 3. post back to GitHub
+    await post_review(
+        repo_name=event.repo_name,
+        pr_number=event.pr_number,
+        head_sha=event.head_sha,
+        installation_id=event.installation_id,
+        comments=comments,
+        summary=summary,
+    )
     # github_client.py wired in next step
 
 # ── Webhook endpoint ──────────────────────────────────────
