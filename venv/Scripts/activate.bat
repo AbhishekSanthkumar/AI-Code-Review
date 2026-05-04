@@ -8,7 +8,7 @@ if defined _OLD_CODEPAGE (
     "%SystemRoot%\System32\chcp.com" 65001 > nul
 )
 
-set VIRTUAL_ENV=C:\Users\abhis\AI-Code-Review\venv
+set VIRTUAL_ENV=C:\Users\abhis\ai-code-review\venv
 
 if not defined PROMPT set PROMPT=$P$G
 
