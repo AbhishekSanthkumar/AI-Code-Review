@@ -72,3 +72,22 @@ async def post_review(
             json={"body": format_summary(summary, comments)},
         )
         print(f"[poster] Posted review — {len(comments)} inline comments")
+
+async def post_error_comment(
+    repo_name: str,
+    pr_number: int,
+    installation_id: str,
+    error: str,
+):
+    token   = await get_installation_token(installation_id)
+    headers = {**API_HEADERS, "Authorization": f"Bearer {token}"}
+
+    async with httpx.AsyncClient() as client:
+        await client.post(
+            f"{API_BASE}/repos/{repo_name}/issues/{pr_number}/comments",
+            headers=headers,
+            json={"body": f"""## 🤖 AI Code Review — Failed
+                  The automated review encountered an error and could not complete.
+                  Please check the server logs or retry by pushing a new commit."""},
+        )
+    print(f"[poster] Posted error comment to PR #{pr_number}")

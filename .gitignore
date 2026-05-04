@@ -1,1 +1,19 @@
 .env *.pem __pycache__/ venv/ .env.local
+# secrets
+.env
+*.pem
+*.key
+
+# database
+*.db
+
+# python
+__pycache__/
+venv/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# editor
+.vscode/
+.idea/

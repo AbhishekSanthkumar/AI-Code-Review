@@ -4,13 +4,23 @@ from dotenv import load_dotenv
 import hmac, hashlib, os, json
 from github_client import fetch_pr_files
 from reviewer import review_pr
-from comment_poster import post_review
+from storage import init_db, already_reviewed, mark_reviewed
+from comment_poster import post_review, post_error_comment
 
+# call this once at startup
+init_db()
 
 load_dotenv()
 
 app = FastAPI()
 WEBHOOK_SECRET = os.getenv("GITHUB_WEBHOOK_SECRET")
+
+from storage import init_db, already_reviewed, mark_reviewed
+
+@app.on_event("startup")
+async def startup():
+    init_db()
+    print("[server] Database initialized")
 
 # ── Data model ────────────────────────────────────────────
 
@@ -72,34 +82,53 @@ def parse_pr_payload(payload: dict) -> PREvent | None:
 async def run_review(event: PREvent):
     print(f"[review] PR #{event.pr_number} in {event.repo_name}")
 
-    # 1. fetch diff
-    files = await fetch_pr_files(
-        event.repo_name,
-        event.pr_number,
-        event.installation_id,
-    )
-    print(f"[review] Fetched {len(files)} files")
-
-    if not files:
-        print("[review] No reviewable files — skipping")
+    # idempotency check — skip if already reviewed this exact commit
+    if already_reviewed(event.repo_name, event.pr_number, event.head_sha):
+        print(f"[review] Already reviewed {event.head_sha[:8]} — skipping")
         return
 
-    # 2. ask Claude
-    summary, comments = await review_pr(
-        event.pr_title,
-        event.pr_body,
-        files,
-    )
+    try:
+        # 1. fetch diff
+        files = await fetch_pr_files(
+            event.repo_name,
+            event.pr_number,
+            event.installation_id,
+        )
+        print(f"[review] Fetched {len(files)} files")
 
-    # 3. post back to GitHub
-    await post_review(
-        repo_name=event.repo_name,
-        pr_number=event.pr_number,
-        head_sha=event.head_sha,
-        installation_id=event.installation_id,
-        comments=comments,
-        summary=summary,
-    )
+        if not files:
+            print("[review] No reviewable files — skipping")
+            return
+
+        # 2. ask Claude
+        summary, comments = await review_pr(
+            event.pr_title,
+            event.pr_body,
+            files,
+        )
+
+        # 3. post back to GitHub
+        await post_review(
+            repo_name=event.repo_name,
+            pr_number=event.pr_number,
+            head_sha=event.head_sha,
+            installation_id=event.installation_id,
+            comments=comments,
+            summary=summary,
+        )
+
+        # 4. mark as done so we never duplicate
+        mark_reviewed(event.repo_name, event.pr_number, event.head_sha)
+
+    except Exception as e:
+        print(f"[review] ERROR: {e}")
+        # post a failure comment so developer knows something went wrong
+        await post_error_comment(
+            repo_name=event.repo_name,
+            pr_number=event.pr_number,
+            installation_id=event.installation_id,
+            error=str(e),
+        )
     # github_client.py wired in next step
 
 # ── Webhook endpoint ──────────────────────────────────────
