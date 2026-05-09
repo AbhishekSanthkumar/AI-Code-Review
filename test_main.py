@@ -1,8 +1,9 @@
 import pytest
 from fastapi.testclient import TestClient
-import hmac, hashlib, json
+import hmac, hashlib, json, os, tempfile
 from unittest.mock import patch, AsyncMock
 from main import app, WEBHOOK_SECRET
+from storage import init_db, already_reviewed, save_review
 
 client = TestClient(app)
 
@@ -123,19 +124,14 @@ def test_valid_pr_is_queued():
 # ── Storage tests ─────────────────────────────────────────
 
 def test_idempotency_prevents_duplicate_review():
-    from storage import init_db, already_reviewed, mark_reviewed
-    import os, tempfile
-
-    # use a temp db so tests don't pollute real data
     with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as f:
         test_db = f.name
 
     with patch("storage.DB_PATH", test_db):
         init_db()
         assert already_reviewed("user/repo", 1, "sha123") == False
-        mark_reviewed("user/repo", 1, "sha123")
+        save_review("user/repo", 1, "Test PR", "testuser", "sha123", "main", 1, 0, 0, 0)
         assert already_reviewed("user/repo", 1, "sha123") == True
-        # different SHA on same PR is NOT a duplicate
         assert already_reviewed("user/repo", 1, "sha456") == False
 
     os.unlink(test_db)

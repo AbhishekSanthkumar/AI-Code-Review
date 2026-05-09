@@ -1,23 +1,18 @@
 from fastapi import FastAPI, Request, HTTPException, BackgroundTasks
 from dataclasses import dataclass
 from dotenv import load_dotenv
-import hmac, hashlib, os, json
+from contextlib import asynccontextmanager
 from github_client import fetch_pr_files
 from reviewer import review_pr
 from comment_poster import post_review, post_error_comment
-from storage import init_db, already_reviewed, mark_reviewed, DB_PATH, save_comments, save_review
-from contextlib import asynccontextmanager
-
-
-# call this once at startup
-init_db()
+from storage import init_db, already_reviewed, save_review, save_comments, DB_PATH
+import hmac, hashlib, os, json
 
 load_dotenv()
 
-app = FastAPI()
 WEBHOOK_SECRET = os.getenv("GITHUB_WEBHOOK_SECRET")
 
-from storage import init_db, already_reviewed, mark_reviewed
+# ── Lifespan ──────────────────────────────────────────────
 
 @asynccontextmanager
 async def lifespan(app):
@@ -62,7 +57,6 @@ def parse_pr_payload(payload: dict) -> PREvent | None:
     pr     = payload["pull_request"]
     author = payload["sender"]["login"]
 
-    # skip draft PRs and bots
     if pr.get("draft", False):
         return None
     if author.endswith("[bot]") or author in ("dependabot", "renovate"):
@@ -82,7 +76,7 @@ def parse_pr_payload(payload: dict) -> PREvent | None:
         installation_id=str(payload["installation"]["id"]),
     )
 
-# ── Review pipeline (stub for now) ───────────────────────
+# ── Review pipeline ───────────────────────────────────────
 
 async def run_review(event: PREvent):
     print(f"[review] PR #{event.pr_number} in {event.repo_name}")
@@ -115,7 +109,6 @@ async def run_review(event: PREvent):
             summary=summary,
         )
 
-        # save rich data for dashboard
         critical    = sum(1 for c in comments if c.severity == "critical")
         warnings    = sum(1 for c in comments if c.severity == "warning")
         suggestions = sum(1 for c in comments if c.severity == "suggestion")
@@ -133,7 +126,8 @@ async def run_review(event: PREvent):
             suggestions=suggestions,
         )
         save_comments(review_id, event.repo_name, event.pr_number, comments)
-        print(f"[db] Saved review {review_id} — score: {100-(critical*25)-(warnings*10)-(suggestions*2)}")
+        score = 100 - (critical * 25) - (warnings * 10) - (suggestions * 2)
+        print(f"[db] Saved review {review_id} — score: {max(0, score)}")
 
     except Exception as e:
         print(f"[review] ERROR: {e}")
@@ -143,7 +137,6 @@ async def run_review(event: PREvent):
             installation_id=event.installation_id,
             error=str(e),
         )
-    # github_client.py wired in next step
 
 # ── Webhook endpoint ──────────────────────────────────────
 
