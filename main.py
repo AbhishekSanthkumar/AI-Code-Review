@@ -5,7 +5,7 @@ import hmac, hashlib, os, json
 from github_client import fetch_pr_files
 from reviewer import review_pr
 from comment_poster import post_review, post_error_comment
-from storage import init_db, already_reviewed, mark_reviewed, DB_PATH
+from storage import init_db, already_reviewed, mark_reviewed, DB_PATH, save_comments, save_review
 from contextlib import asynccontextmanager
 
 
@@ -88,19 +88,13 @@ async def run_review(event: PREvent):
     print(f"[review] PR #{event.pr_number} in {event.repo_name}")
     print(f"[idempotency] SHA: {event.head_sha[:12]} | DB: {DB_PATH}")
 
-    # idempotency check — skip if already reviewed this exact commit    
     if already_reviewed(event.repo_name, event.pr_number, event.head_sha):
         print(f"[idempotency] Already reviewed — SKIPPING ✓")
         return
-    
-    print(f"[idempotency] New SHA — proceeding")
 
     try:
-        # 1. fetch diff
         files = await fetch_pr_files(
-            event.repo_name,
-            event.pr_number,
-            event.installation_id,
+            event.repo_name, event.pr_number, event.installation_id
         )
         print(f"[review] Fetched {len(files)} files")
 
@@ -108,14 +102,10 @@ async def run_review(event: PREvent):
             print("[review] No reviewable files — skipping")
             return
 
-        # 2. ask Claude
         summary, comments = await review_pr(
-            event.pr_title,
-            event.pr_body,
-            files,
+            event.pr_title, event.pr_body, files
         )
 
-        # 3. post back to GitHub
         await post_review(
             repo_name=event.repo_name,
             pr_number=event.pr_number,
@@ -125,12 +115,28 @@ async def run_review(event: PREvent):
             summary=summary,
         )
 
-        # 4. mark as done so we never duplicate
-        mark_reviewed(event.repo_name, event.pr_number, event.head_sha)
+        # save rich data for dashboard
+        critical    = sum(1 for c in comments if c.severity == "critical")
+        warnings    = sum(1 for c in comments if c.severity == "warning")
+        suggestions = sum(1 for c in comments if c.severity == "suggestion")
+
+        review_id = save_review(
+            repo=event.repo_name,
+            pr_number=event.pr_number,
+            pr_title=event.pr_title,
+            author=event.author,
+            head_sha=event.head_sha,
+            base_ref=event.base_ref,
+            total_files=len(files),
+            critical=critical,
+            warnings=warnings,
+            suggestions=suggestions,
+        )
+        save_comments(review_id, event.repo_name, event.pr_number, comments)
+        print(f"[db] Saved review {review_id} — score: {100-(critical*25)-(warnings*10)-(suggestions*2)}")
 
     except Exception as e:
         print(f"[review] ERROR: {e}")
-        # post a failure comment so developer knows something went wrong
         await post_error_comment(
             repo_name=event.repo_name,
             pr_number=event.pr_number,
