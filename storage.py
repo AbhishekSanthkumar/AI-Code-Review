@@ -2,8 +2,9 @@ import sqlite3, os
 from dataclasses import dataclass
 from typing import Optional
 
-DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 
-          os.getenv("DB_PATH", "reviews.db"))
+DB_PATH = os.getenv("DB_PATH") or os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "reviews.db"
+)
 
 # ── Schema ────────────────────────────────────────────────
 
