@@ -1,4 +1,6 @@
 from fastapi import FastAPI, Request, HTTPException, BackgroundTasks
+from fastapi.middleware.cors import CORSMiddleware
+from api import router as api_router
 from dataclasses import dataclass
 from dotenv import load_dotenv
 from contextlib import asynccontextmanager
@@ -21,6 +23,17 @@ async def lifespan(app):
     yield
 
 app = FastAPI(lifespan=lifespan)
+
+# CORS — allows the React dashboard to call this API
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # tighten this to your Vercel URL after deployment
+    allow_methods=["GET"],
+    allow_headers=["*"],
+)
+
+# mount the metrics API
+app.include_router(api_router)
 
 # ── Data model ────────────────────────────────────────────
 
