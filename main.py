@@ -27,10 +27,14 @@ app = FastAPI(lifespan=lifespan)
 # CORS — allows the React dashboard to call this API
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # tighten this to your Vercel URL after deployment
+    allow_origins=[
+        "https://ai-code-review-dashboard-seven.vercel.app",
+        "http://localhost:5173",  # keep for local dev
+    ],
     allow_methods=["GET"],
     allow_headers=["*"],
 )
+
 
 # mount the metrics API
 app.include_router(api_router)
