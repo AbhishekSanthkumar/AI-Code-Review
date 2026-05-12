@@ -5,17 +5,19 @@
 **[🚀 Live Dashboard](https://ai-code-review-dashboard-seven.vercel.app)** · 
 **[⚙️ Backend API](https://ai-code-review-production-ec4d.up.railway.app/api/repos)**
 
+[![CI](https://github.com/AbhishekSanthkumar/AI-Code-Review/actions/workflows/ci.yml/badge.svg)](https://github.com/AbhishekSanthkumar/AI-Code-Review/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/badge/Python-3.10+-blue.svg)](https://python.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-green.svg)](https://fastapi.tiangolo.com)
 [![Claude AI](https://img.shields.io/badge/Claude-Sonnet-purple.svg)](https://anthropic.com)
-[![Railway](https://img.shields.io/badge/Deployed-Railway-red.svg)](https://railway.app)
+[![Railway](https://img.shields.io/badge/Backend-Railway-red.svg)](https://railway.app)
+[![Vercel](https://img.shields.io/badge/Dashboard-Vercel-black.svg)](https://vercel.com)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ---
 
 ## 📸 Demo
 
-When a pull request is opened, the system automatically posts inline review comments like this:
+When a pull request is opened, the system automatically posts inline review comments directly on the diff:
 
 ```
 🔴 Critical
@@ -31,9 +33,9 @@ process_file() opens a file handle but never closes it. Use a context manager:
 with open(filepath, 'r') as f: content = f.read()
 ```
 
+The live dashboard at **[ai-code-review-dashboard-seven.vercel.app](https://ai-code-review-dashboard-seven.vercel.app)** tracks code quality trends over time — click any PR row to see the full breakdown of every comment posted.
+
 ---
-
-
 
 ## ✨ Features
 
@@ -45,6 +47,8 @@ with open(filepath, 'r') as f: content = f.read()
 - **Context-aware** — sends PR title and description to the AI so it understands intent
 - **Multi-file support** — reviews up to 20 files per PR, prioritised by change size
 - **Error resilience** — posts a failure comment if something goes wrong so developers aren't left wondering
+- **Metrics dashboard** — code quality score trends, most critical files, author leaderboards
+- **PR detail view** — click any PR to see the full text of every review comment
 
 ---
 
@@ -86,11 +90,27 @@ GitHub PR opened
 │  ├── Parse AI JSON response             │
 │  ├── Post inline review comments        │
 │  └── Post summary to conversation       │
+│                                         │
+│  storage.py                             │
+│  ├── Save review + comment data         │
+│  └── Idempotency check                  │
 └─────────────────────────────────────────┘
        │
        ▼
-  Comments appear
-  on GitHub PR
+  Comments appear          Metrics saved
+  on GitHub PR        →    to SQLite DB
+                                │
+                                ▼
+                    ┌───────────────────────┐
+                    │   React Dashboard     │
+                    │   (Vercel)            │
+                    │                       │
+                    │  Score trend chart    │
+                    │  Critical files list  │
+                    │  Author leaderboard   │
+                    │  PR history table     │
+                    │  Comment detail modal │
+                    └───────────────────────┘
 ```
 
 ---
@@ -102,9 +122,15 @@ GitHub PR opened
 | Web server | FastAPI + Uvicorn | Webhook receiver, async request handling |
 | AI model | Claude Sonnet (Anthropic) | Code analysis and review generation |
 | GitHub integration | GitHub Apps API | Authentication, diff fetching, comment posting |
-| Storage | SQLite | Idempotency tracking |
-| Deployment | Railway | 24/7 cloud hosting |
+| Storage | SQLite + Railway Volume | Review metrics, idempotency tracking |
+| Backend deployment | Railway | 24/7 cloud hosting with persistent storage |
 | Auth | JWT + RSA | GitHub App authentication |
+| Dashboard | React 18 + Vite | Code quality metrics frontend |
+| Styling | Tailwind CSS | Dashboard design |
+| Charts | Recharts | Score trend visualisation |
+| Data fetching | TanStack Query | API state management |
+| Dashboard deployment | Vercel | Static frontend hosting |
+| CI/CD | GitHub Actions | Automated test suite on every push |
 
 ---
 
@@ -113,6 +139,7 @@ GitHub PR opened
 ### Prerequisites
 
 - Python 3.10+
+- Node.js 18+
 - A GitHub account
 - An [Anthropic API key](https://console.anthropic.com)
 - [ngrok](https://ngrok.com) for local development
@@ -159,7 +186,6 @@ GITHUB_APP_ID=your_app_id
 GITHUB_PRIVATE_KEY_PATH=./your-private-key.pem
 GITHUB_WEBHOOK_SECRET=your_webhook_secret
 ANTHROPIC_API_KEY=sk-ant-...
-DB_PATH=./reviews.db
 ```
 
 ### 6. Start the server
@@ -180,20 +206,32 @@ Open a pull request — you should see the AI review appear within 15 seconds.
 
 ---
 
-## ☁️ Deployment (Railway)
+## 📊 Running the Dashboard Locally
 
-This project is configured for one-click deployment to Railway.
+```bash
+cd dashboard
+npm install
+npm run dev
+```
+
+Open `http://localhost:5173` — the dashboard connects to the live Railway API automatically.
+
+---
+
+## ☁️ Deployment
+
+### Backend (Railway)
 
 1. Fork this repo
 2. Go to [railway.app](https://railway.app) → **New Project** → **Deploy from GitHub**
-3. Add these environment variables in Railway:
+3. Add a **Volume** mounted at `/data`
+4. Add these environment variables:
 
 ```
-GITHUB_APP_ID         = your app id
+GITHUB_APP_ID          = your app id
 GITHUB_PRIVATE_KEY_B64 = base64 encoded contents of your .pem file
-GITHUB_WEBHOOK_SECRET = your webhook secret
-ANTHROPIC_API_KEY     = sk-ant-...
-DB_PATH               = ./reviews.db
+GITHUB_WEBHOOK_SECRET  = your webhook secret
+ANTHROPIC_API_KEY      = sk-ant-...
 ```
 
 To base64 encode your private key:
@@ -205,7 +243,13 @@ with open('your-key.pem', 'rb') as f:
 "
 ```
 
-4. Update your GitHub App webhook URL to your Railway domain + `/webhook`
+5. Update your GitHub App webhook URL to your Railway domain + `/webhook`
+
+### Dashboard (Vercel)
+
+1. Push the `dashboard/` folder to a separate GitHub repo
+2. Go to [vercel.com](https://vercel.com) → **New Project** → import the repo
+3. Vercel auto-detects Vite — click **Deploy**
 
 ---
 
@@ -217,11 +261,20 @@ ai-code-review/
 ├── github_client.py   # GitHub App auth, diff fetching
 ├── reviewer.py        # AI prompt building, Claude API call, response parsing
 ├── comment_poster.py  # Posting inline comments and summary back to GitHub
-├── storage.py         # SQLite idempotency tracking
+├── storage.py         # SQLite schema, metrics storage, idempotency
+├── api.py             # REST API endpoints for the dashboard
+├── test_main.py       # Test suite (7 tests)
 ├── Procfile           # Railway deployment config
 ├── railway.json       # Railway build settings
 ├── requirements.txt   # Python dependencies
 └── .gitignore         # Keeps secrets out of git
+
+dashboard/
+├── src/
+│   ├── App.jsx        # Full dashboard — charts, tables, comment modal
+│   └── index.css      # Tailwind import
+├── vite.config.js
+└── package.json
 ```
 
 ---
@@ -233,17 +286,22 @@ ai-code-review/
 - `hmac.compare_digest()` used for signature comparison (timing-attack safe)
 - Bot and Dependabot PRs automatically skipped
 - Draft PRs skipped to avoid reviewing work-in-progress
+- CORS locked to dashboard domain in production
 
 ---
 
 ## 🗺️ Roadmap
 
-- [ ] Dashboard for tracking code quality metrics over time
+- [x] AI-powered inline PR review comments
+- [x] Idempotency — no duplicate reviews on webhook retries
+- [x] CI pipeline with automated test suite
+- [x] Production deployment on Railway
+- [x] Metrics dashboard with score trends
+- [x] PR detail view showing full comment text
 - [ ] Support for GitLab and Bitbucket webhooks
 - [ ] Fine-tuned model on real code review datasets
 - [ ] Per-repo configuration (custom rules, severity thresholds)
 - [ ] Slack/Teams notifications for critical findings
-- [ ] PR quality score trending over time
 
 ---
 
@@ -262,6 +320,6 @@ Pull requests are welcome. For major changes, please open an issue first to disc
 ## 👤 Author
 
 **Abhishek Santhkumar**  
-Built as part of a portfolio project to demonstrate AI integration, GitHub App development, and production deployment skills.
+Built as a portfolio project demonstrating AI integration, GitHub App development, full-stack engineering, and production deployment.
 
 > ⭐ If this project helped you, please give it a star on GitHub!
