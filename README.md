@@ -1,6 +1,6 @@
 # 🤖 AI Code Review System
 
-> An AI-powered GitHub App that automatically reviews pull requests, flags security vulnerabilities, suggests architectural improvements, and posts inline comments — all within seconds of a PR being opened.
+> An AI-powered GitHub App that automatically reviews pull requests, flags security vulnerabilities, suggests architectural improvements, and posts inline comments all within seconds of a PR being opened.
 
 **[🚀 Live Dashboard](https://ai-code-review-dashboard-seven.vercel.app)** · 
 **[⚙️ Backend API](https://ai-code-review-production-ec4d.up.railway.app/api/repos)**
@@ -39,16 +39,16 @@ The live dashboard at **[ai-code-review-dashboard-seven.vercel.app](https://ai-c
 
 ## ✨ Features
 
-- **Inline PR comments** — feedback attached to exact lines in the diff, not just a wall of text
-- **Security scanning** — flags SQL injection, shell injection, hardcoded credentials, insecure deserialization
-- **Severity levels** — 🔴 Critical / 🟡 Warning / 🔵 Suggestion so developers know what to fix first
-- **Smart filtering** — skips lock files, binaries, minified assets, and bot-authored PRs
-- **Idempotency** — never posts duplicate reviews even if GitHub retries the webhook
-- **Context-aware** — sends PR title and description to the AI so it understands intent
-- **Multi-file support** — reviews up to 20 files per PR, prioritised by change size
-- **Error resilience** — posts a failure comment if something goes wrong so developers aren't left wondering
-- **Metrics dashboard** — code quality score trends, most critical files, author leaderboards
-- **PR detail view** — click any PR to see the full text of every review comment
+- **Inline PR comments** - feedback attached to exact lines in the diff, not just a wall of text
+- **Security scanning** - flags SQL injection, shell injection, hardcoded credentials, insecure deserialization
+- **Severity levels** - 🔴 Critical / 🟡 Warning / 🔵 Suggestion so developers know what to fix first
+- **Smart filtering** - skips lock files, binaries, minified assets, and bot-authored PRs
+- **Idempotency** - never posts duplicate reviews even if GitHub retries the webhook
+- **Context-aware** - sends PR title and description to the AI so it understands intent
+- **Multi-file support** - reviews up to 20 files per PR, prioritised by change size
+- **Error resilience** - posts a failure comment if something goes wrong so developers aren't left wondering
+- **Metrics dashboard** - code quality score trends, most critical files, author leaderboards
+- **PR detail view** - click any PR to see the full text of every review comment
 
 ---
 
@@ -214,7 +214,7 @@ npm install
 npm run dev
 ```
 
-Open `http://localhost:5173` — the dashboard connects to the live Railway API automatically.
+Open `http://localhost:5173` - the dashboard connects to the live Railway API automatically.
 
 ---
 
@@ -293,7 +293,7 @@ dashboard/
 ## 🗺️ Roadmap
 
 - [x] AI-powered inline PR review comments
-- [x] Idempotency — no duplicate reviews on webhook retries
+- [x] Idempotency - no duplicate reviews on webhook retries
 - [x] CI pipeline with automated test suite
 - [x] Production deployment on Railway
 - [x] Metrics dashboard with score trends
