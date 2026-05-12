@@ -2,6 +2,9 @@
 
 > An AI-powered GitHub App that automatically reviews pull requests, flags security vulnerabilities, suggests architectural improvements, and posts inline comments — all within seconds of a PR being opened.
 
+**[🚀 Live Dashboard](https://ai-code-review-dashboard-seven.vercel.app)** · 
+**[⚙️ Backend API](https://ai-code-review-production-ec4d.up.railway.app/api/repos)**
+
 [![Python](https://img.shields.io/badge/Python-3.10+-blue.svg)](https://python.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-green.svg)](https://fastapi.tiangolo.com)
 [![Claude AI](https://img.shields.io/badge/Claude-Sonnet-purple.svg)](https://anthropic.com)
@@ -30,8 +33,7 @@ with open(filepath, 'r') as f: content = f.read()
 
 ---
 
-**[🚀 Live Dashboard](https://ai-code-review-dashboard-seven.vercel.app)** · 
-**[⚙️ Backend API](https://ai-code-review-production-ec4d.up.railway.app/api/repos)**
+
 
 ## ✨ Features
 
