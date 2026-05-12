@@ -33,7 +33,7 @@ process_file() opens a file handle but never closes it. Use a context manager:
 with open(filepath, 'r') as f: content = f.read()
 ```
 
-The live dashboard at **[ai-code-review-dashboard-seven.vercel.app](https://ai-code-review-dashboard-seven.vercel.app)** tracks code quality trends over time — click any PR row to see the full breakdown of every comment posted.
+The live dashboard at **[ai-code-review-dashboard-seven.vercel.app](https://ai-code-review-dashboard-seven.vercel.app)** tracks code quality trends over time click any PR row to see the full breakdown of every comment posted.
 
 ---
 
@@ -249,7 +249,7 @@ with open('your-key.pem', 'rb') as f:
 
 1. Push the `dashboard/` folder to a separate GitHub repo
 2. Go to [vercel.com](https://vercel.com) → **New Project** → import the repo
-3. Vercel auto-detects Vite — click **Deploy**
+3. Vercel auto-detects Vite - click **Deploy**
 
 ---
 
@@ -282,7 +282,7 @@ dashboard/
 ## 🔒 Security
 
 - Webhook payloads verified with HMAC-SHA256 before processing
-- GitHub App private key stored as base64 env var — never committed to git
+- GitHub App private key stored as base64 env var - never committed to git
 - `hmac.compare_digest()` used for signature comparison (timing-attack safe)
 - Bot and Dependabot PRs automatically skipped
 - Draft PRs skipped to avoid reviewing work-in-progress
