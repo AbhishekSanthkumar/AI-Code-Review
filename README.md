@@ -30,6 +30,9 @@ with open(filepath, 'r') as f: content = f.read()
 
 ---
 
+**[🚀 Live Dashboard](https://ai-code-review-dashboard-seven.vercel.app)** · 
+**[⚙️ Backend API](https://ai-code-review-production-ec4d.up.railway.app/api/repos)**
+
 ## ✨ Features
 
 - **Inline PR comments** — feedback attached to exact lines in the diff, not just a wall of text
