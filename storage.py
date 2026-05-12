@@ -117,6 +117,27 @@ def save_comments(review_id: int, repo: str, pr_number: int, comments: list):
     con.commit()
     con.close()
 
+def get_comments(repo: str, pr_number: int) -> list[dict]:
+    con = sqlite3.connect(DB_PATH)
+    rows = con.execute(
+        """SELECT filename, line, severity, body, created_at
+           FROM review_comments
+           WHERE repo=? AND pr_number=?
+           ORDER BY severity DESC, filename, line""",
+        (repo, pr_number)
+    ).fetchall()
+    con.close()
+    return [
+        {
+            "filename": r[0],
+            "line":     r[1],
+            "severity": r[2],
+            "body":     r[3],
+            "created_at": r[4],
+        }
+        for r in rows
+    ]
+
 # ── Read (used by API) ────────────────────────────────────
 
 def get_repos() -> list[str]:

@@ -29,3 +29,13 @@ def repo_metrics(
 @router.get("/health")
 def health():
     return {"status": "ok"}
+
+@router.get("/comments")
+def list_comments(
+    repo: str = Query(...),
+    pr_number: int = Query(...),
+):
+    """Return all comments for a specific PR review."""
+    from storage import get_comments
+    comments = get_comments(repo, pr_number)
+    return {"repo": repo, "pr_number": pr_number, "comments": comments}
